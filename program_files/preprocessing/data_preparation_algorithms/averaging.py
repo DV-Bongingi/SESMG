@@ -2,13 +2,16 @@
     Christian Klemm - christian.klemm@fh-muenster.de
 """
 import numpy
-from program_files.preprocessing.data_preparation \
-    import calculate_cluster_means, variable_costs_date_adaption, \
-    timeseries_adaption
+from program_files.preprocessing.data_preparation import (
+    calculate_cluster_means,
+    variable_costs_date_adaption,
+    timeseries_adaption,
+)
 
 
-def timeseries_averaging(cluster_period: str, days_per_cluster: int,
-                         nodes_data: dict, period: str):
+def timeseries_averaging(
+    cluster_period: str, days_per_cluster: int, nodes_data: dict, period: str
+):
     """
         Averages the values of the time series, how many values are
         averaged is defined by the variable clusters.
@@ -28,26 +31,26 @@ def timeseries_averaging(cluster_period: str, days_per_cluster: int,
         :raise: - **ValueError** - Error raised if the chosen period \
             is not supported
     """
-    if cluster_period == 'hours':
+    if cluster_period == "hours":
         clusters = 8760 // int(days_per_cluster)
-    elif cluster_period == 'days':
+    elif cluster_period == "days":
         clusters = 365 // int(days_per_cluster)
-    elif cluster_period == 'weeks':
+    elif cluster_period == "weeks":
         clusters = 52 // int(days_per_cluster)
     else:
         raise ValueError("period chosen not possible")
-    
-    weather_data = nodes_data['weather data']
-    
-    if period == 'days':
+
+    weather_data = nodes_data["weather data"]
+
+    if period == "days":
         periods = int(len(weather_data) / 24)
-    elif period == 'weeks':
+    elif period == "weeks":
         periods = int(len(weather_data) / (24 * 7))
-    elif period == 'hours':
+    elif period == "hours":
         periods = int(len(weather_data))
     else:
         raise ValueError("period chosen not possible")
-    
+
     cluster_labels = []
     for i in range(clusters):
         for j in range(periods // clusters):
@@ -56,21 +59,22 @@ def timeseries_averaging(cluster_period: str, days_per_cluster: int,
         for k in range(periods % clusters):
             cluster_labels.append(clusters - 1)
     cluster_labels = numpy.array(cluster_labels)
-    
+
     # Apply the Clusters to the entire weather_dataset
-    prep_weather_data = calculate_cluster_means(data_set=weather_data,
-                                                cluster_number=clusters,
-                                                cluster_labels=cluster_labels,
-                                                period=period)
-    
+    prep_weather_data = calculate_cluster_means(
+        data_set=weather_data,
+        cluster_number=clusters,
+        cluster_labels=cluster_labels,
+        period=period,
+    )
+
     # Rename columns of the new weather_dataset
-    prep_weather_data['timestamp'] = \
-        weather_data['timestamp'][:len(prep_weather_data)]
-    
+    prep_weather_data["timestamp"] = weather_data["timestamp"][: len(prep_weather_data)]
+
     # Replaces the weather data set in nodes_data by the new one
-    nodes_data['weather data'] = prep_weather_data
-    
+    nodes_data["weather data"] = prep_weather_data
+
     # Adapts Other Parameters (despite weather data) of the energy system
     variable_costs_date_adaption(nodes_data, clusters, period)
-    
+
     timeseries_adaption(nodes_data, clusters, cluster_labels, period)
